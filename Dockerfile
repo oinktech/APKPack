@@ -4,7 +4,7 @@ FROM ubuntu:20.04
 # 設置環境變數
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV GRADLE_HOME=/opt/gradle
-ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${GRADLE_HOME}/bin
+ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${GRADLE_HOME}/bin
 
 # 更新系統並安裝必要的工具
 RUN apt-get update && \
@@ -35,8 +35,8 @@ RUN wget -q -O /tmp/android-tools.zip "https://www.dropbox.com/scl/fi/2z4xgbiivh
 RUN mv ${ANDROID_SDK_ROOT}/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools-latest
 
 # 確保所需的 SDK 組件已安裝
-RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses && \
-    sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+RUN yes | ${ANDROID_SDK_ROOT}/cmdline-tools-latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses && \
+    ${ANDROID_SDK_ROOT}/cmdline-tools-latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-30" "build-tools;30.0.3"
 
 # 設置工作目錄
 WORKDIR /app
