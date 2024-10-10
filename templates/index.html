@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APKPack - 線上 APK 打包器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #00bfff;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        form {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            display: inline-block;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        label {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        input[type="file"],
+        input[type="text"] {
+            margin-bottom: 20px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #00bfff;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #007acc;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .fa-file-upload {
+            margin-right: 10px;
+        }
+        .fa-spinner {
+            animation: spin 2s infinite linear;
+        }
+        .progress {
+            display: none;
+            margin-top: 20px;
+            height: 25px;
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #00bfff;
+            transition: width 0.4s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1><i class="fas fa-cogs"></i> APKPack - 線上 APK 打包器</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <label for="file"><i class="fas fa-file-upload"></i> 上傳您的 Android 專案 ZIP 檔：</label>
+        <input type="file" id="file" name="file" required>
+        
+        <label for="apk_name"><i class="fas fa-edit"></i> 輸入自定義的 APK 名稱：</label>
+        <input type="text" id="apk_name" name="apk_name" placeholder="app-debug" required>
+
+        <button type="submit"><i class="fas fa-upload"></i> 開始打包 APK</button>
+    </form>
+
+    <div class="progress" id="progress">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div id="status"></div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const progressBar = document.getElementById('progress-bar');
+        const progressDiv = document.getElementById('progress');
+        const statusDiv = document.getElementById('status');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            statusDiv.innerHTML = '<i class="fas fa-spinner"></i> 正在上傳並打包中...';
+            statusDiv.className = '';
+            progressDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('上傳失敗，請重試');
+                }
+
+                const data = await response.blob();
+                const url = window.URL.createObjectURL(data);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = formData.get('apk_name') ? `${formData.get('apk_name')}.apk` : 'app-debug.apk';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                statusDiv.innerHTML = '<span class="success">APK 打包成功！即將下載...</span>';
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="error">${error.message}</span>`;
+            } finally {
+                progressBar.style.width = '100%';
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    statusDiv.innerHTML = '';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
