@@ -1,9 +1,8 @@
 from flask import Flask, request, jsonify, send_file, render_template
 import os
 import subprocess
-import zipfile
-from werkzeug.utils import secure_filename
 import shutil
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -13,18 +12,26 @@ BUILD_FOLDER = '/tmp/build'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(BUILD_FOLDER, exist_ok=True)
 
-# 設置文件大小限制（100MB）
-MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
+# 設置文件大小限制（10MB）
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
-# 檢查伺服器空間
-def check_server_capacity():
-    total, used, free = shutil.disk_usage("/")
-    return free > 1024 * 1024 * 1024 * 3 # 3 GB 容量限制
+# 檢查 Cordova 是否已安裝
+def check_cordova_installed():
+    try:
+        subprocess.run(['cordova', '-v'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
-# 檢查是否允許上傳的文件類型
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
+# 安裝 Cordova
+def install_cordova():
+    try:
+        subprocess.run(['npm', 'install', '-g', 'cordova'], check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f'安裝 Cordova 失敗: {str(e)}')
+        return False
 
 @app.route('/')
 def index():
@@ -32,20 +39,14 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    if not check_server_capacity():
-        return jsonify({'error': '伺服器空間不足，請稍後再試'}), 507
-
     if 'file' not in request.files:
         return jsonify({'error': '沒有選擇文件'}), 400
 
     file = request.files['file']
-    apk_name = request.form.get('apk_name', 'app-debug').strip()  # 默認名稱為 app-debug
+    apk_name = request.form.get('apk_name', 'MyApp').strip()  # 從表單獲取應用名稱，默認為 'MyApp'
 
     if file.filename == '':
         return jsonify({'error': '文件名稱為空'}), 400
-
-    if not allowed_file(file.filename):
-        return jsonify({'error': '不允許的文件類型，只允許 ZIP 檔案'}), 400
 
     filename = secure_filename(file.filename)
     file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -53,78 +54,36 @@ def upload_file():
     try:
         file.save(file_path)
     except Exception as e:
-        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500  # 更详细的错误信息
+        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500
 
-    # 解壓文件
+    # 檢查和安裝 Cordova
+    if not check_cordova_installed():
+        if not install_cordova():
+            return jsonify({'error': '未能安裝 Cordova，請手動安裝並重試'}), 500
+
+    # 構建 Cordova 項目
     try:
-        with zipfile.ZipFile(file_path, 'r') as zip_ref:
-            zip_ref.extractall(BUILD_FOLDER)
-    except zipfile.BadZipFile:
-        return jsonify({'error': '無法解壓縮該文件，請確認文件是否正確'}), 400
-    except Exception as e:
-        return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500  # 捕获其他解压缩异常
+        # 創建 Cordova 項目，使用安全文件名稱
+        subprocess.run(['cordova', 'create', secure_filename(apk_name), 'com.example.myapp', apk_name], check=True, cwd=BUILD_FOLDER)
+        os.chdir(os.path.join(BUILD_FOLDER, secure_filename(apk_name)))
 
-    # 生成 build.xml
-    build_xml_content = f"""<project name="APKPack" default="debug" basedir=".">
-    <property name="src.dir" value="."/>
-    <property name="bin.dir" value="bin"/>
-    <property name="libs.dir" value="libs"/>
+        # 添加 Android 平台
+        subprocess.run(['cordova', 'platform', 'add', 'android'], check=True)
 
-    <target name="clean">
-        <delete dir="${{bin.dir}}"/>
-    </target>
+        # 複製上傳的文件到 www 目錄
+        shutil.copytree(UPLOAD_FOLDER, os.path.join(BUILD_FOLDER, secure_filename(apk_name), 'www'), dirs_exist_ok=True)
 
-    <target name="compile">
-        <mkdir dir="${{bin.dir}}"/>
-        <copy todir="${{bin.dir}}">
-            <fileset dir="${{src.dir}}"/>
-        </copy>
-    </target>
+        # 構建 APK
+        subprocess.run(['cordova', 'build', 'android'], check=True)
 
-    <target name="debug" depends="clean, compile">
-        <echo message="Building APK..."/>
-        <exec executable="java" failonerror="true">
-            <arg value="-jar"/>
-            <arg value="apkbuilder.jar"/>
-            <arg value="{secure_filename(apk_name)}.apk"/>
-            <arg value="-f"/>
-            <arg value="${{bin.dir}}"/>
-            <arg value="-z"/>
-            <arg value="${{libs.dir}}/{filename}"/> <!-- 使用上传的 ZIP 文件名 -->
-        </exec>
-    </target>
-</project>
-"""
-    
-    build_xml_path = os.path.join(BUILD_FOLDER, 'build.xml')
-    with open(build_xml_path, 'w') as build_file:
-        build_file.write(build_xml_content)
+        apk_path = os.path.join(BUILD_FOLDER, secure_filename(apk_name), 'platforms', 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
 
-    # 执行 Ant 打包
-    try:
-        result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True, text=True)
-        print(result.stdout)  # 打印标准输出
-        print(result.stderr)   # 打印标准错误
-
-        apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{secure_filename(apk_name)}.apk')
-
-        if not os.path.exists(apk_path):
-            return jsonify({'error': '打包失敗，無法生成 APK 文件'}), 500
-
-        # 使用用户指定的 APK 名称
-        custom_apk_name = f"{secure_filename(apk_name)}.apk"
-        custom_apk_path = os.path.join(BUILD_FOLDER, custom_apk_name)
-        os.rename(apk_path, custom_apk_path)
-
-        return send_file(custom_apk_path, as_attachment=True, download_name=custom_apk_name)
+        return send_file(apk_path, as_attachment=True, download_name=f'{secure_filename(apk_name)}.apk')
     except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'APK 打包失敗: {e.stderr}'}), 500
-    except Exception as e:
-        return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500  # 捕获其他错误
+        return jsonify({'error': f'打包失敗: {str(e)}'}), 500
     finally:
         # 清理上傳的文件和構建文件
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        shutil.rmtree(UPLOAD_FOLDER, ignore_errors=True)
         shutil.rmtree(BUILD_FOLDER, ignore_errors=True)
 
 if __name__ == '__main__':
