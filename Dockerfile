@@ -42,7 +42,9 @@ WORKDIR /app
 
 # 复制项目文件到容器中
 COPY . .
+
 # 暴露端口 10000
 EXPOSE 10000
+
 # 执行 Flask 应用
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=10000"]
