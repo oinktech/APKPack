@@ -1,0 +1,31 @@
+<project name="APKPack" default="debug" basedir=".">
+    <property name="src.dir" value="src"/>
+    <property name="bin.dir" value="bin"/>
+    <property name="libs.dir" value="libs"/>
+    
+    <target name="clean">
+        <delete dir="${bin.dir}"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${bin.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${bin.dir}" includeantruntime="false">
+            <classpath>
+                <pathelement path="${libs.dir}/*"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="debug" depends="clean, compile">
+        <echo message="Building APK..."/>
+        <exec executable="java" failonerror="true">
+            <arg value="-jar"/>
+            <arg value="apkbuilder.jar"/>
+            <arg value="${bin.dir}/MyApp.apk"/>
+            <arg value="-f"/>
+            <arg value="${bin.dir}/classes"/>
+            <arg value="-z"/>
+            <arg value="path/to/your/project.zip"/>
+        </exec>
+    </target>
+</project>
