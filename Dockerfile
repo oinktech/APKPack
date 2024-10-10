@@ -47,6 +47,7 @@ COPY . .
 EXPOSE 10000
 
 RUN ant -version
+RUN java -version
 
 # 执行 Flask 应用
 CMD ["flask", "run", "--host=0.0.0.0", "--port=10000"]
