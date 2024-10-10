@@ -13,55 +13,18 @@ BUILD_FOLDER = '/tmp/build'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(BUILD_FOLDER, exist_ok=True)
 
-# 設置文件大小限制（100MB）
-MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
+# 設置文件大小限制（10MB）
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # 檢查伺服器空間
 def check_server_capacity():
     total, used, free = shutil.disk_usage("/")
-    return free > 1024 * 1024 * 1024 * 3  # 3 GB 容量限制
+    return free > 100 * 1024 * 1024  # 100 MB 容量限制
 
 # 檢查是否允許上傳的文件類型
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
-
-# 生成 build.xml 文件
-def create_build_xml(apk_name):
-    build_xml_content = f"""<project name="APKPack" default="debug" basedir=".">
-    <property name="src.dir" value="."/>
-    <property name="bin.dir" value="bin"/>
-    <property name="libs.dir" value="libs"/>
-    
-    <target name="clean">
-        <delete dir="${{bin.dir}}"/>
-    </target>
-
-    <target name="compile">
-        <mkdir dir="${{bin.dir}}"/>
-        <javac srcdir="${{src.dir}}" destdir="${{bin.dir}}" includeantruntime="false">
-            <classpath>
-                <pathelement path="${{libs.dir}}/*"/>
-            </classpath>
-        </javac>
-    </target>
-
-    <target name="debug" depends="clean, compile">
-        <echo message="正在建構 APK..."/>
-        <exec executable="java" failonerror="true">
-            <arg value="-jar"/>
-            <arg value="apkbuilder.jar"/>
-            <arg value="{secure_filename(apk_name)}.apk"/>
-            <arg value="-f"/>
-            <arg value="${{bin.dir}}/classes"/>
-            <arg value="-z"/>
-            <arg value="${{BUILD_FOLDER}}/{secure_filename(apk_name)}.zip"/>
-        </exec>
-    </target>
-</project>"""
-    
-    with open(os.path.join(BUILD_FOLDER, 'build.xml'), 'w') as build_file:
-        build_file.write(build_xml_content)
 
 @app.route('/')
 def index():
@@ -90,7 +53,7 @@ def upload_file():
     try:
         file.save(file_path)
     except Exception as e:
-        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500  # 更詳細的錯誤信息
+        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500  # 更详细的错误信息
 
     # 解壓文件
     try:
@@ -99,20 +62,53 @@ def upload_file():
     except zipfile.BadZipFile:
         return jsonify({'error': '無法解壓縮該文件，請確認文件是否正確'}), 400
     except Exception as e:
-        return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500  # 捕獲其他解壓縮異常
+        return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500  # 捕获其他解压缩异常
 
-    # 生成 build.xml 文件
-    create_build_xml(apk_name)
+    # 生成 build.xml
+    build_xml_content = f"""<project name="APKPack" default="debug" basedir=".">
+    <property name="src.dir" value="."/>
+    <property name="bin.dir" value="bin"/>
+    <property name="libs.dir" value="libs"/>
 
-    # 執行 Ant 打包
+    <target name="clean">
+        <delete dir="${{bin.dir}}"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${{bin.dir}}"/>
+        <copy todir="${{bin.dir}}">
+            <fileset dir="${{src.dir}}"/>
+        </copy>
+    </target>
+
+    <target name="debug" depends="clean, compile">
+        <echo message="Building APK..."/>
+        <exec executable="java" failonerror="true">
+            <arg value="-jar"/>
+            <arg value="apkbuilder.jar"/>
+            <arg value="{secure_filename(apk_name)}.apk"/>
+            <arg value="-f"/>
+            <arg value="${{bin.dir}}"/>
+            <arg value="-z"/>
+            <arg value="${{libs.dir}}/your_zip_file.zip"/> <!-- 可以放入您需要的ZIP -->
+        </exec>
+    </target>
+</project>
+"""
+    
+    build_xml_path = os.path.join(BUILD_FOLDER, 'build.xml')
+    with open(build_xml_path, 'w') as build_file:
+        build_file.write(build_xml_content)
+
+    # 执行 Ant 打包
     try:
         result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True)
-        apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{apk_name}.apk')
+        apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{secure_filename(apk_name)}.apk')
 
         if not os.path.exists(apk_path):
             return jsonify({'error': '打包失敗，無法生成 APK 文件'}), 500
 
-        # 使用用戶指定的 APK 名稱
+        # 使用用户指定的 APK 名称
         custom_apk_name = f"{secure_filename(apk_name)}.apk"
         custom_apk_path = os.path.join(BUILD_FOLDER, custom_apk_name)
         os.rename(apk_path, custom_apk_path)
@@ -121,7 +117,7 @@ def upload_file():
     except subprocess.CalledProcessError as e:
         return jsonify({'error': f'APK 打包失敗: {e.stderr.decode("utf-8")}'}), 500
     except Exception as e:
-        return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500  # 捕獲其他錯誤
+        return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500  # 捕获其他错误
     finally:
         # 清理上傳的文件和構建文件
         if os.path.exists(file_path):
