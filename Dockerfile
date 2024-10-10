@@ -24,10 +24,10 @@ RUN wget -q -O /tmp/gradle.zip "https://services.gradle.org/distributions/gradle
     mv /opt/gradle-* ${GRADLE_HOME} && \
     rm /tmp/gradle.zip
 
-# 確認 Gradle 是否存在，列出目錄內容
+# 確認 Gradle 是否存在，列出目錄內容，並增加錯誤處理
 RUN echo "Checking Gradle installation..." && \
     ls -l ${GRADLE_HOME} && \
-    ls -l ${GRADLE_HOME}/bin
+    ls -l ${GRADLE_HOME}/bin || { echo "Gradle installation failed!"; exit 1; }
 
 # 下載 Android Command Line Tools
 RUN wget -q -O /tmp/android-tools.zip "https://www.dropbox.com/scl/fi/2z4xgbiivh496tbmm7qxb/commandlinetools-linux-8092744_latest.zip?rlkey=i0k715n8f20fa3a5faq3z4l9v&dl=1" && \
@@ -48,8 +48,10 @@ WORKDIR /app
 COPY . .
 
 # 使用完整路徑執行 Gradle 以避免找不到問題
-RUN /opt/gradle/bin/gradle build
+RUN /opt/gradle/bin/gradle build || { echo "Gradle build failed!"; exit 1; }
 
+# 曝露端口（根據需要）
+EXPOSE 8080
 
 # 定義容器啟動時運行的命令
 CMD ["/opt/gradle/bin/gradle", "assembleDebug"]
