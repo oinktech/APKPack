@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # 安裝必要工具及依賴
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    curl unzip git openjdk-11-jdk python3-pip && \
+    curl wget unzip git openjdk-11-jdk python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -22,7 +22,7 @@ ENV PATH $ANDROID_HOME/cmdline-tools/bin:$PATH
 
 # 安裝 Gradle
 RUN GRADLE_VERSION=7.6 && \
-    curl -s "https://downloads.gradle-dn.com/distributions/gradle-$GRADLE_VERSION-bin.zip" -o gradle.zip && \
+    wget "https://downloads.gradle-dn.com/distributions/gradle-$GRADLE_VERSION-bin.zip" -O gradle.zip && \
     unzip gradle.zip -d /opt && \
     rm gradle.zip && \
     mv /opt/gradle-$GRADLE_VERSION /opt/gradle && \
