@@ -90,7 +90,7 @@
     <h1><i class="fas fa-cogs"></i> APKPack - 線上 APK 打包器</h1>
     <form id="uploadForm" enctype="multipart/form-data">
         <label for="file"><i class="fas fa-file-upload"></i> 上傳您的 Android 專案 ZIP 檔：</label>
-        <input type="file" id="file" name="file" required>
+        <input type="file" id="file" name="file" accept=".zip" required>
         
         <label for="apk_name"><i class="fas fa-edit"></i> 輸入自定義的 APK 名稱：</label>
         <input type="text" id="apk_name" name="apk_name" placeholder="app-debug" required>
@@ -116,6 +116,7 @@
             statusDiv.innerHTML = '<i class="fas fa-spinner"></i> 正在上傳並打包中...';
             statusDiv.className = '';
             progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
 
             try {
                 const response = await fetch('/upload', {
@@ -123,6 +124,7 @@
                     body: formData
                 });
 
+                // 确保响应为 JSON 格式
                 const result = await response.json();
 
                 if (!response.ok) {
