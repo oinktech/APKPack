@@ -26,6 +26,9 @@ RUN wget -q -O /tmp/gradle.zip "https://www.dropbox.com/scl/fi/a8lgyc4qfx8sgrh96
     mv /opt/gradle-* ${GRADLE_HOME} && \
     rm /tmp/gradle.zip
 
+# 檢查 Gradle 是否存在
+RUN ls -l ${GRADLE_HOME}/bin/gradle
+
 # 下載 Android Command Line Tools
 RUN wget -q -O /tmp/android-tools.zip "https://www.dropbox.com/scl/fi/2z4xgbiivh496tbmm7qxb/commandlinetools-linux-8092744_latest.zip?rlkey=i0k715n8f20fa3a5faq3z4l9v&dl=1" && \
     unzip -q /tmp/android-tools.zip -d ${ANDROID_SDK_ROOT} && \
