@@ -1,49 +1,52 @@
-# 使用官方的 Python 镜像作为基础镜像
-FROM python:3.9
+# 使用官方的 OpenJDK 11 作為基礎映像
+FROM openjdk:11-jdk
 
-# 设置环境变量
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV ANDROID_SDK_ROOT /opt/android-sdk
-ENV GRADLE_HOME /opt/gradle
-ENV PATH "${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${GRADLE_HOME}/bin"
+# 設定環境變數
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV GRADLE_VERSION=7.4.2
+ENV ANDROID_VERSION=29
+ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/build-tools/${ANDROID_VERSION}:${ANDROID_SDK_ROOT}/emulator:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin
 
-# 安装必要的系统依赖
-RUN apt update && apt install -y \
-    curl \
+# 更新和安裝必要的包
+RUN apt-get update && apt-get install -y \
+    wget \
     unzip \
-    openjdk-11-jdk \
-    && apt clean && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# 安装 Android SDK
-RUN mkdir -p ${ANDROID_SDK_ROOT} && \
-    cd ${ANDROID_SDK_ROOT} && \
-    curl -o sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip && \
-    unzip sdk.zip && \
-    rm sdk.zip && \
-    mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools && \
-    mv tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest && \
-    yes | sdkmanager --licenses && \
-    sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "emulator" && \
-    rm -rf ${ANDROID_SDK_ROOT}/cmdline-tools
+# 安裝 Android SDK
+RUN mkdir -p ${ANDROID_SDK_ROOT} && cd ${ANDROID_SDK_ROOT} \
+    && wget -q https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip \
+    && unzip commandlinetools-linux-7583922_latest.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools \
+    && rm commandlinetools-linux-7583922_latest.zip \
+    && mv ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest
 
-# 安装 Gradle
-RUN curl -s "https://downloads.gradle-dn.com/distributions/gradle-7.5-bin.zip" -o gradle.zip && \
-    unzip gradle.zip -d /opt && \
-    rm gradle.zip && \
-    mv /opt/gradle-7.5 /opt/gradle
+# 設置 Android SDK 的接受條款
+RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
 
-# 创建应用目录
+# 安裝所需的 SDK 和平台工具
+RUN sdkmanager --sdk_root=${ANDROID_SDK_ROOT} \
+    "platforms;android-${ANDROID_VERSION}" \
+    "build-tools;${ANDROID_VERSION}" \
+    "extras;google;m2repository" \
+    "extras;android;m2repository" \
+    "platform-tools" \
+    "emulator"
+
+# 下載和安裝 Gradle
+RUN wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip \
+    && unzip gradle-${GRADLE_VERSION}-bin.zip -d /opt/ \
+    && rm gradle-${GRADLE_VERSION}-bin.zip \
+    && ln -s /opt/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle
+
+# 創建工作目錄
 WORKDIR /app
 
-# 复制 Python 依赖文件
-COPY requirements.txt .
-
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制应用代码
+# 複製應用程序源代碼到容器中
 COPY . .
 
-# 设置默认命令
-CMD ["python", "app.py"]
+# 進行 Gradle 構建
+RUN gradle build
+
+# 設定容器啟動命令
+CMD ["gradle", "assembleDebug"]
