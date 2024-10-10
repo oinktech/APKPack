@@ -3,8 +3,6 @@ import os
 import subprocess
 import zipfile
 from werkzeug.utils import secure_filename
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 import shutil
 
 app = Flask(__name__)
@@ -18,13 +16,6 @@ os.makedirs(BUILD_FOLDER, exist_ok=True)
 # 設置文件大小限制（10MB）
 MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
-
-# 啟用速率限制，最多每分鐘 10 次請求
-limiter = Limiter(
-    get_remote_address,
-    app=app,  # 确保只传递一个 app 参数
-    default_limits=["10 per minute"]
-)
 
 # 檢查伺服器空間
 def check_server_capacity():
@@ -40,7 +31,6 @@ def index():
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-@limiter.limit("5 per minute")  # 每分鐘最多允許 5 次上傳
 def upload_file():
     if not check_server_capacity():
         return jsonify({'error': '伺服器空間不足，請稍後再試'}), 507
