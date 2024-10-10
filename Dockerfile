@@ -33,6 +33,9 @@ RUN yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_
 # 安装需要的 SDK 组件
 RUN $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-30" "build-tools;30.0.3"
 
+# 下载 apkbuilder.jar
+RUN wget https://dl.google.com/android/android-sdk/wearable-android-sdk/apkbuilder.jar -O $ANDROID_HOME/build-tools/apkbuilder.jar
+
 # 安装 Flask 和其他 Python 依赖
 COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
