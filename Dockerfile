@@ -1,5 +1,5 @@
 # 使用官方的 Python 镜像作为基础镜像
-FROM python:3.9-slim
+FROM python:3.9
 
 # 设置环境变量
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -9,11 +9,11 @@ ENV GRADLE_HOME /opt/gradle
 ENV PATH "${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${GRADLE_HOME}/bin"
 
 # 安装必要的系统依赖
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
     curl \
     unzip \
     openjdk-11-jdk \
-    && rm -rf /var/lib/apt/lists/*
+    && apt clean && rm -rf /var/lib/apt/lists/*
 
 # 安装 Android SDK
 RUN mkdir -p ${ANDROID_SDK_ROOT} && \
