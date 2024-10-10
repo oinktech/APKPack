@@ -1,7 +1,7 @@
 # 使用 Ubuntu 作为基础映像
 FROM ubuntu:20.04
 
-# 设置时区环境变量，避免交互式选择
+# 设置时区和非交互模式以避免交互提示
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Taipei
 
@@ -18,13 +18,14 @@ RUN apt-get update && apt-get install -y \
 
 # 设置 Android SDK 相关环境变量
 ENV ANDROID_HOME=/opt/android-sdk
-ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
 
 # 下载 Android SDK 命令行工具并解压到正确的路径
 RUN wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/android-tools.zip && \
-    mkdir -p $ANDROID_HOME/cmdline-tools/latest && \
-    unzip /tmp/android-tools.zip -d $ANDROID_HOME/cmdline-tools/latest && \
-    rm /tmp/android-tools.zip
+    mkdir -p $ANDROID_HOME/cmdline-tools && \
+    unzip /tmp/android-tools.zip -d $ANDROID_HOME/cmdline-tools && \
+    rm /tmp/android-tools.zip && \
+    mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
 
 # 同意 SDK 管理器的许可证
 RUN yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
