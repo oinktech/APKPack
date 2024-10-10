@@ -22,7 +22,7 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 # 啟用速率限制，最多每分鐘 10 次請求
 limiter = Limiter(
     get_remote_address,
-    app=app,
+    app=app,  # 确保只传递一个 app 参数
     default_limits=["10 per minute"]
 )
 
@@ -95,4 +95,4 @@ def upload_file():
         shutil.rmtree(BUILD_FOLDER, ignore_errors=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000,debug=True)
+    app.run(host='0.0.0.0', port=10000, debug=True)
