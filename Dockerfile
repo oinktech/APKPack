@@ -16,23 +16,25 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Flask 和其他 Python 依赖
-COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt
-
 # 设置 Android SDK 相关环境变量
 ENV ANDROID_HOME=/opt/android-sdk
-ENV PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
 
-# 下载 Android SDK
-RUN wget https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip -O /tmp/android-tools.zip && \
-    mkdir -p $ANDROID_HOME && \
-    unzip /tmp/android-tools.zip -d $ANDROID_HOME && \
-    rm /tmp/android-tools.zip && \
-    yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
+# 下载 Android SDK 命令行工具并解压到正确的路径
+RUN wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/android-tools.zip && \
+    mkdir -p $ANDROID_HOME/cmdline-tools && \
+    unzip /tmp/android-tools.zip -d $ANDROID_HOME/cmdline-tools && \
+    rm /tmp/android-tools.zip
+
+# 同意 SDK 管理器的许可证
+RUN yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses
 
 # 安装需要的 SDK 组件
 RUN $ANDROID_HOME/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+
+# 安装 Flask 和其他 Python 依赖
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # 设置工作目录
 WORKDIR /app
