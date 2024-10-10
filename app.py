@@ -20,7 +20,7 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 # 檢查伺服器空間
 def check_server_capacity():
     total, used, free = shutil.disk_usage("/")
-    return free > 1024 * 1024 * 1024 *3 # 3 GB 容量限制
+    return free > 1024 * 1024 * 1024 * 3  # 3 GB 容量限制
 
 # 檢查是否允許上傳的文件類型
 def allowed_file(filename):
@@ -85,7 +85,7 @@ def upload_file():
         <echo message="Building APK..."/>
         <exec executable="java" failonerror="true">
             <arg value="-jar"/>
-            <arg value="${ANDROID_HOME}/build-tools/30.0.3/apkbuilder.jar"/>
+            <arg value="${{ANDROID_HOME}}/build-tools/30.0.3/apkbuilder.jar"/>
             <arg value="{secure_filename(apk_name)}.apk"/>
             <arg value="-f"/>
             <arg value="${{bin.dir}}"/>
