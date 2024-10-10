@@ -18,7 +18,7 @@ ENV PATH $ANDROID_HOME/cmdline-tools/latest/bin:$PATH
 # 下载 Android SDK 工具
 RUN mkdir -p /opt/android-sdk && \
     echo "Downloading Android SDK command line tools..." && \
-    curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip && \
+    curl -L -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip && \
     echo "Unzipping Android SDK command line tools..." && \
     unzip sdk-tools.zip -d /opt/android-sdk && \
     rm sdk-tools.zip && \
@@ -28,7 +28,7 @@ RUN mkdir -p /opt/android-sdk && \
 # 安装 Gradle
 RUN GRADLE_VERSION=7.6 && \
     echo "Downloading Gradle..." && \
-    curl -o gradle.zip "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" && \
+    curl -L -o gradle.zip "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" && \
     echo "Unzipping Gradle..." && \
     unzip gradle.zip -d /opt && \
     rm gradle.zip && \
