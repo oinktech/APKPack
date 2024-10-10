@@ -13,14 +13,14 @@ BUILD_FOLDER = '/tmp/build'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(BUILD_FOLDER, exist_ok=True)
 
-# 設置文件大小限制（10MB）
-MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB
+# 設置文件大小限制（100MB）
+MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # 檢查伺服器空間
 def check_server_capacity():
     total, used, free = shutil.disk_usage("/")
-    return free > 100 * 1024 * 1024  # 100 MB 容量限制
+    return free > 1024 * 1024 * 1024 *3 # 3 GB 容量限制
 
 # 檢查是否允許上傳的文件類型
 def allowed_file(filename):
@@ -85,7 +85,7 @@ def upload_file():
         <echo message="Building APK..."/>
         <exec executable="java" failonerror="true">
             <arg value="-jar"/>
-            <arg value="apkbuilder.jar"/>
+            <arg value="${ANDROID_HOME}/build-tools/30.0.3/apkbuilder.jar"/>
             <arg value="{secure_filename(apk_name)}.apk"/>
             <arg value="-f"/>
             <arg value="${{bin.dir}}"/>
