@@ -7,7 +7,13 @@ RUN apt-get update && apt-get install -y \
     wget \
     unzip \
     ant \
+    python3 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
+
+# 安裝 Flask 和其他 Python 依賴
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # 設定環境變量
 ENV ANDROID_HOME=/opt/android-sdk
@@ -29,5 +35,5 @@ WORKDIR /app
 # 複製你的專案文件到容器中
 COPY . .
 
-# 執行 Ant 指令
-CMD ["ant", "debug"]
+# 執行 Flask 應用
+CMD ["flask", "run", "--host=0.0.0.0"]
