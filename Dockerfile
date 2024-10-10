@@ -22,7 +22,7 @@ ENV PATH $ANDROID_HOME/cmdline-tools/bin:$PATH
 
 # 安裝 Gradle
 RUN GRADLE_VERSION=7.6 && \
-    wget "https://downloads.gradle-dn.com/distributions/gradle-$GRADLE_VERSION-bin.zip" -O gradle.zip && \
+    wget -q "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" -O gradle.zip && \
     unzip gradle.zip -d /opt && \
     rm gradle.zip && \
     mv /opt/gradle-$GRADLE_VERSION /opt/gradle && \
