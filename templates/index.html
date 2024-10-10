@@ -124,15 +124,20 @@
                     body: formData
                 });
 
-                // 确保响应为 JSON 格式
-                const result = await response.json();
-
+                // 確保響應為 JSON 格式
                 if (!response.ok) {
-                    throw new Error(result.error || '上傳失敗，請重試');
+                    throw new Error('上傳失敗，請重試');
                 }
 
-                const data = await response.blob();
-                const url = window.URL.createObjectURL(data);
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                const data = await fetch(result.downloadUrl); // 確保正確獲取下載的 APK
+                const blob = await data.blob();
+                const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = formData.get('apk_name') ? `${formData.get('apk_name')}.apk` : 'app-debug.apk';
