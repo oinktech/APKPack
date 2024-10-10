@@ -18,16 +18,16 @@ RUN apt-get update && \
 # 創建安裝目錄
 RUN mkdir -p ${ANDROID_SDK_ROOT} ${GRADLE_HOME}
 
-# 從 Dropbox 下載 Android Command Line Tools 和 Gradle
-# 使用提供的下載鏈接
-# 下載 Gradle
-RUN wget -q -O /tmp/gradle.zip "https://www.dropbox.com/scl/fi/a8lgyc4qfx8sgrh96y140/gradle-7.6-bin.zip?rlkey=gzefvbqrz942qf3tf13w5gk3m&dl=1" && \
+# 從 Gradle 官方網站下載最新版本的 Gradle
+RUN wget -q -O /tmp/gradle.zip "https://services.gradle.org/distributions/gradle-7.6-bin.zip" && \
     unzip -q /tmp/gradle.zip -d /opt && \
     mv /opt/gradle-* ${GRADLE_HOME} && \
     rm /tmp/gradle.zip
 
-# 檢查 Gradle 是否存在
-RUN ls -l ${GRADLE_HOME}/bin/gradle
+# 確認 Gradle 是否存在，列出目錄內容
+RUN echo "Checking Gradle installation..." && \
+    ls -l ${GRADLE_HOME} && \
+    ls -l ${GRADLE_HOME}/bin
 
 # 下載 Android Command Line Tools
 RUN wget -q -O /tmp/android-tools.zip "https://www.dropbox.com/scl/fi/2z4xgbiivh496tbmm7qxb/commandlinetools-linux-8092744_latest.zip?rlkey=i0k715n8f20fa3a5faq3z4l9v&dl=1" && \
@@ -49,7 +49,6 @@ COPY . .
 
 # 使用完整路徑執行 Gradle 以避免找不到問題
 RUN /opt/gradle/bin/gradle build
-
 
 
 # 定義容器啟動時運行的命令
