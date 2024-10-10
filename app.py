@@ -26,22 +26,6 @@ def check_server_capacity():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
 
-# 檢查是否已安裝 Cordova
-def check_cordova_installed():
-    try:
-        subprocess.run(['cordova', '-v'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-# 安裝 Cordova
-def install_cordova():
-    try:
-        subprocess.run(['npm', 'install', '-g', 'cordova'], check=True)
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -55,7 +39,7 @@ def upload_file():
         return jsonify({'error': '沒有選擇文件'}), 400
 
     file = request.files['file']
-    apk_name = request.form.get('apk_name', 'MyApp').strip()  # 從表單獲取應用名稱，默認為 'MyApp'
+    apk_name = request.form.get('apk_name', 'app-debug').strip()  # 默認名稱為 app-debug
 
     if file.filename == '':
         return jsonify({'error': '文件名稱為空'}), 400
@@ -80,32 +64,63 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500  # 捕获其他解压缩异常
 
-    # 檢查和安裝 Cordova
-    if not check_cordova_installed():
-        if not install_cordova():
-            return jsonify({'error': '未能安裝 Cordova，請手動安裝並重試'}), 500
+    # 生成 build.xml
+    build_xml_content = f"""<project name="APKPack" default="debug" basedir=".">
+    <property name="src.dir" value="."/>
+    <property name="bin.dir" value="bin"/>
+    <property name="libs.dir" value="libs"/>
 
-    # 構建 Cordova 項目
+    <target name="clean">
+        <delete dir="${{bin.dir}}"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${{bin.dir}}"/>
+        <copy todir="${{bin.dir}}">
+            <fileset dir="${{src.dir}}"/>
+        </copy>
+    </target>
+
+    <target name="debug" depends="clean, compile">
+        <echo message="Building APK..."/>
+        <exec executable="java" failonerror="true">
+            <arg value="-jar"/>
+            <arg value="apkbuilder.jar"/>
+            <arg value="{secure_filename(apk_name)}.apk"/>
+            <arg value="-f"/>
+            <arg value="${{bin.dir}}"/>
+            <arg value="-z"/>
+            <arg value="${{libs.dir}}/{filename}"/> <!-- 使用上传的 ZIP 文件名 -->
+        </exec>
+    </target>
+</project>
+"""
+    
+    build_xml_path = os.path.join(BUILD_FOLDER, 'build.xml')
+    with open(build_xml_path, 'w') as build_file:
+        build_file.write(build_xml_content)
+
+    # 执行 Ant 打包
     try:
-        subprocess.run(['cordova', 'create', secure_filename(apk_name), 'com.example.myapp', apk_name], check=True, cwd=BUILD_FOLDER)
-        os.chdir(os.path.join(BUILD_FOLDER, secure_filename(apk_name)))
+        result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True, text=True)
+        print(result.stdout)  # 打印标准输出
+        print(result.stderr)   # 打印标准错误
 
-        # 添加 Android 平台
-        subprocess.run(['cordova', 'platform', 'add', 'android'], check=True)
+        apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{secure_filename(apk_name)}.apk')
 
-        # 複製上傳的文件到 www 目錄
-        shutil.copytree(BUILD_FOLDER, os.path.join(BUILD_FOLDER, secure_filename(apk_name), 'www'), dirs_exist_ok=True)
+        if not os.path.exists(apk_path):
+            return jsonify({'error': '打包失敗，無法生成 APK 文件'}), 500
 
-        # 構建 APK
-        subprocess.run(['cordova', 'build', 'android'], check=True)
+        # 使用用户指定的 APK 名称
+        custom_apk_name = f"{secure_filename(apk_name)}.apk"
+        custom_apk_path = os.path.join(BUILD_FOLDER, custom_apk_name)
+        os.rename(apk_path, custom_apk_path)
 
-        apk_path = os.path.join(BUILD_FOLDER, secure_filename(apk_name), 'platforms', 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
-
-        return send_file(apk_path, as_attachment=True, download_name=f'{secure_filename(apk_name)}.apk')
+        return send_file(custom_apk_path, as_attachment=True, download_name=custom_apk_name)
     except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'打包失敗: {str(e)}'}), 500
+        return jsonify({'error': f'APK 打包失敗: {e.stderr}'}), 500
     except Exception as e:
-        return jsonify({'error': f'發生錯誤: {str(e)}'}), 500  # 捕获其他错误
+        return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500  # 捕获其他错误
     finally:
         # 清理上傳的文件和構建文件
         if os.path.exists(file_path):
