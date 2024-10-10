@@ -12,19 +12,24 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # 設置 Android SDK 環境變量
-RUN mkdir -p /opt/android-sdk && \
-    curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip && \
-    unzip sdk-tools.zip -d /opt/android-sdk && \
-    rm sdk-tools.zip && \
-    # 確保 cmdline-tools 的目錄結構正確
-    mv /opt/android-sdk/cmdline-tools /opt/android-sdk/cmdline-tools/latest
-
 ENV ANDROID_HOME /opt/android-sdk
 ENV PATH $ANDROID_HOME/cmdline-tools/latest/bin:$PATH
 
+# 下載 Android SDK 工具
+RUN mkdir -p /opt/android-sdk && \
+    echo "Downloading Android SDK command line tools..." && \
+    curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip && \
+    echo "Unzipping Android SDK command line tools..." && \
+    unzip sdk-tools.zip -d /opt/android-sdk && \
+    rm sdk-tools.zip && \
+    echo "Renaming cmdline-tools directory..." && \
+    mv /opt/android-sdk/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+
 # 安裝 Gradle
 RUN GRADLE_VERSION=7.6 && \
+    echo "Downloading Gradle..." && \
     wget -q "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" -O gradle.zip && \
+    echo "Unzipping Gradle..." && \
     unzip gradle.zip -d /opt && \
     rm gradle.zip && \
     mv /opt/gradle-$GRADLE_VERSION /opt/gradle && \
@@ -33,7 +38,8 @@ RUN GRADLE_VERSION=7.6 && \
 ENV PATH /opt/gradle/bin:$PATH
 
 # 安裝 Android SDK 所需包
-RUN yes | sdkmanager --licenses && \
+RUN echo "Accepting SDK licenses and installing platform tools..." && \
+    yes | sdkmanager --licenses && \
     sdkmanager "platforms;android-30" "build-tools;30.0.3" "platform-tools"
 
 # 複製你的 Flask 應用文件
