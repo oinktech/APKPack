@@ -1,52 +1,49 @@
-# 使用 Ubuntu 作为基础映像
-FROM ubuntu:20.04
+# 使用官方的 Python 镜像作为基础镜像
+FROM python:3.9-slim
 
-# 环境设置
-ENV DEBIAN_FRONTEND=noninteractive
+# 设置环境变量
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV ANDROID_SDK_ROOT /opt/android-sdk
+ENV GRADLE_HOME /opt/gradle
+ENV PATH "${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${GRADLE_HOME}/bin"
 
-# 安装必要工具及依赖
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl unzip git openjdk-11-jdk python3-pip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# 安装必要的系统依赖
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    openjdk-11-jdk \
+    && rm -rf /var/lib/apt/lists/*
 
-# 设置 Android SDK 环境变量
-ENV ANDROID_HOME /opt/android-sdk
-ENV PATH $ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-
-# 下载 Android SDK 工具
-RUN mkdir -p /opt/android-sdk && \
-    echo "Downloading Android SDK command line tools..." && \
-    curl -L -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip && \
-    echo "Unzipping Android SDK command line tools..." && \
-    unzip sdk-tools.zip -d /opt/android-sdk && \
-    rm sdk-tools.zip && \
-    echo "Renaming cmdline-tools directory..." && \
-    mv /opt/android-sdk/cmdline-tools /opt/android-sdk/cmdline-tools/latest
+# 安装 Android SDK
+RUN mkdir -p ${ANDROID_SDK_ROOT} && \
+    cd ${ANDROID_SDK_ROOT} && \
+    curl -o sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip && \
+    unzip sdk.zip && \
+    rm sdk.zip && \
+    mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools && \
+    mv tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest && \
+    yes | sdkmanager --licenses && \
+    sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3" "emulator" && \
+    rm -rf ${ANDROID_SDK_ROOT}/cmdline-tools
 
 # 安装 Gradle
-RUN GRADLE_VERSION=7.6 && \
-    echo "Downloading Gradle..." && \
-    curl -L -o gradle.zip "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" && \
-    echo "Unzipping Gradle..." && \
+RUN curl -s "https://downloads.gradle-dn.com/distributions/gradle-7.5-bin.zip" -o gradle.zip && \
     unzip gradle.zip -d /opt && \
     rm gradle.zip && \
-    mv /opt/gradle-$GRADLE_VERSION /opt/gradle && \
-    ln -s /opt/gradle/bin/gradle /usr/local/bin/gradle
+    mv /opt/gradle-7.5 /opt/gradle
 
-ENV PATH /opt/gradle/bin:$PATH
-
-# 安装 Android SDK 所需包
-RUN yes | sdkmanager --licenses && \
-    sdkmanager "platforms;android-30" "build-tools;30.0.3" "platform-tools"
-
-# 复制你的 Flask 应用文件
+# 创建应用目录
 WORKDIR /app
-COPY . /app
+
+# 复制 Python 依赖文件
+COPY requirements.txt .
 
 # 安装 Python 依赖
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 启动 Flask 应用
-CMD ["python3", "app.py"]
+# 复制应用代码
+COPY . .
+
+# 设置默认命令
+CMD ["python", "app.py"]
