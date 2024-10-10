@@ -85,7 +85,7 @@ def upload_file():
         <echo message="Building APK..."/>
         <exec executable="java" failonerror="true">
             <arg value="-jar"/>
-            <arg value="${{ANDROID_HOME}}/build-tools/30.0.3/apkbuilder.jar"/>
+            <arg value="${ANDROID_HOME}/build-tools/30.0.3/apkbuilder.jar"/>
             <arg value="{secure_filename(apk_name)}.apk"/>
             <arg value="-f"/>
             <arg value="${{bin.dir}}"/>
@@ -103,8 +103,8 @@ def upload_file():
     # 执行 Ant 打包
     try:
         result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True, text=True)
-        print(result.stdout)  # 打印标准输出
-        print(result.stderr)   # 打印标准错误
+        print("标准输出:", result.stdout)  # 打印标准输出
+        print("标准错误:", result.stderr)   # 打印标准错误
 
         apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{secure_filename(apk_name)}.apk')
 
