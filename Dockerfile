@@ -1,8 +1,10 @@
 # 使用 Ubuntu 作為基礎映像
 FROM ubuntu:20.04
 
-# 安裝必要的工具和依賴
+# 設定時區，避免交互式選擇
+ENV TZ=Asia/Taipei
 RUN apt-get update && apt-get install -y \
+    tzdata \
     openjdk-11-jdk \
     wget \
     unzip \
