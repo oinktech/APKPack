@@ -1,52 +1,54 @@
-# 使用 Python 官方基礎映像
-FROM python:3.9-slim
+# 使用官方的 Ubuntu 基礎映像
+FROM ubuntu:20.04
 
-# 環境變數設定
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# 設置環境變數
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
-ENV GRADLE_VERSION=7.5.1
-ENV ANDROID_CMDLINE_TOOLS_VERSION=latest
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${GRADLE_HOME}/bin
 
-# 安裝系統依賴
-RUN apt-get update && apt-get install -y \
+# 更新系統並安裝必要的工具
+RUN apt-get update && \
+    apt-get install -y \
     wget \
     unzip \
     openjdk-11-jdk \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安裝 Android SDK
-RUN mkdir -p ${ANDROID_SDK_ROOT} && \
-    cd ${ANDROID_SDK_ROOT} && \
-    wget https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip && \
-    unzip commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip && \
-    rm commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}_latest.zip
+# 創建安裝目錄
+RUN mkdir -p ${ANDROID_SDK_ROOT} ${GRADLE_HOME}
 
-# 設置 SDK 環境變數
-ENV PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
+# 從 Dropbox 下載 Android Command Line Tools 和 Gradle
+# 使用提供的下載鏈接
+# 下載 Gradle
+RUN wget -q -O /tmp/gradle.zip "https://www.dropbox.com/scl/fi/a8lgyc4qfx8sgrh96y140/gradle-7.6-bin.zip?rlkey=gzefvbqrz942qf3tf13w5gk3m&dl=1" && \
+    unzip -q /tmp/gradle.zip -d /opt && \
+    mv /opt/gradle-* ${GRADLE_HOME} && \
+    rm /tmp/gradle.zip
 
-# 安裝 Android SDK 平台和構建工具
-RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install "platform-tools" "platforms;android-31" "build-tools;31.0.0"
+# 下載 Android Command Line Tools
+RUN wget -q -O /tmp/android-tools.zip "https://www.dropbox.com/scl/fi/2z4xgbiivh496tbmm7qxb/commandlinetools-linux-8092744_latest.zip?rlkey=i0k715n8f20fa3a5faq3z4l9v&dl=1" && \
+    unzip -q /tmp/android-tools.zip -d ${ANDROID_SDK_ROOT} && \
+    rm /tmp/android-tools.zip
 
-# 安裝 Gradle
-RUN wget https://downloads.gradle-dn.com/distributions/gradle-${GRADLE_VERSION}-bin.zip && \
-    unzip gradle-${GRADLE_VERSION}-bin.zip -d /opt/ && \
-    rm gradle-${GRADLE_VERSION}-bin.zip && \
-    ln -s /opt/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle
+# 移動工具目錄並設置權限
+RUN mv ${ANDROID_SDK_ROOT}/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools-latest
+
+# 確保所需的 SDK 組件已安裝
+RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses && \
+    sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-30" "build-tools;30.0.3"
 
 # 設置工作目錄
 WORKDIR /app
 
-# 複製 requirements.txt 並安裝 Python 依賴
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 複製 Flask 應用程式
+# 複製您的專案文件到容器中
 COPY . .
 
-# 暴露應用的端口
+# 安裝 Gradle 依賴
+RUN gradle build
+
+# 曝露端口（根據需要）
 EXPOSE 10000
 
-# 啟動 Flask 應用
-CMD ["python", "app.py"]
+# 定義容器啟動時運行的命令
+CMD ["gradle", "assembleDebug"]
