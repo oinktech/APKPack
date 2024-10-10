@@ -29,7 +29,7 @@ def allowed_file(filename):
 # 生成 build.xml 文件
 def create_build_xml(apk_name):
     build_xml_content = f"""<project name="APKPack" default="debug" basedir=".">
-    <property name="src.dir" value="src"/>
+    <property name="src.dir" value="."/>
     <property name="bin.dir" value="bin"/>
     <property name="libs.dir" value="libs"/>
     
