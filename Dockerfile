@@ -44,11 +44,10 @@ WORKDIR /app
 # 複製您的專案文件到容器中
 COPY . .
 
-# 安裝 Gradle 依賴
-RUN gradle build
+# 使用完整路徑執行 Gradle 以避免找不到問題
+RUN /opt/gradle/bin/gradle build
 
-# 曝露端口（根據需要）
-EXPOSE 10000
+
 
 # 定義容器啟動時運行的命令
-CMD ["gradle", "assembleDebug"]
+CMD ["/opt/gradle/bin/gradle", "assembleDebug"]
