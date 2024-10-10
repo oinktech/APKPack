@@ -11,10 +11,6 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# 安裝 SDKMAN
-RUN curl -s "https://get.sdkman.io" | bash && \
-    bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install gradle 7.6"
-
 # 設置 Android SDK 環境變量
 RUN mkdir -p /opt/android-sdk && \
     curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip && \
@@ -23,7 +19,16 @@ RUN mkdir -p /opt/android-sdk && \
 
 ENV ANDROID_HOME /opt/android-sdk
 ENV PATH $ANDROID_HOME/cmdline-tools/bin:$PATH
-ENV PATH /root/.sdkman/candidates/gradle/current/bin:$PATH
+
+# 安裝 Gradle
+RUN GRADLE_VERSION=7.6 && \
+    curl -s "https://downloads.gradle-dn.com/distributions/gradle-$GRADLE_VERSION-bin.zip" -o gradle.zip && \
+    unzip gradle.zip -d /opt && \
+    rm gradle.zip && \
+    mv /opt/gradle-$GRADLE_VERSION /opt/gradle && \
+    ln -s /opt/gradle/bin/gradle /usr/local/bin/gradle
+
+ENV PATH /opt/gradle/bin:$PATH
 
 # 安裝 Android SDK 所需包
 RUN yes | sdkmanager --licenses && \
