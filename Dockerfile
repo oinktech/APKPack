@@ -4,7 +4,7 @@ FROM openjdk:11-jdk
 # 設定環境變數
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV GRADLE_VERSION=7.4.2
-ENV ANDROID_VERSION=30  # 使用可用的版本，例如 30
+ENV ANDROID_VERSION=30  # 更新为可用的版本
 ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/build-tools/${ANDROID_VERSION}:${ANDROID_SDK_ROOT}/emulator:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin
 
 # 更新和安裝必要的包
