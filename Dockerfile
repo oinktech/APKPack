@@ -4,7 +4,7 @@ FROM openjdk:11-jdk
 # 設定環境變數
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV GRADLE_VERSION=7.4.2
-ENV ANDROID_VERSION=29
+ENV ANDROID_VERSION=30  # 使用可用的版本，例如 30
 ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/build-tools/${ANDROID_VERSION}:${ANDROID_SDK_ROOT}/emulator:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin
 
 # 更新和安裝必要的包
@@ -14,15 +14,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 安裝 Android SDK
+# 安裝 Android SDK 命令行工具
 RUN mkdir -p ${ANDROID_SDK_ROOT} && cd ${ANDROID_SDK_ROOT} \
     && wget -q https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip \
     && unzip commandlinetools-linux-7583922_latest.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools \
     && rm commandlinetools-linux-7583922_latest.zip \
     && mv ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest
 
-# 設置 Android SDK 的接受條款
+# 更新 SDK 工具
 RUN yes | sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
+RUN sdkmanager --update
 
 # 安裝所需的 SDK 和平台工具
 RUN sdkmanager --sdk_root=${ANDROID_SDK_ROOT} \
