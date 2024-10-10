@@ -13,14 +13,14 @@ BUILD_FOLDER = '/tmp/build'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(BUILD_FOLDER, exist_ok=True)
 
-# 設置文件大小限制（10MB）
-MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB
+# 設置文件大小限制（100MB）
+MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # 檢查伺服器空間
 def check_server_capacity():
     total, used, free = shutil.disk_usage("/")
-    return free > 100 * 1024 * 1024  # 100 MB 容量限制
+    return free > 1024 * 1024 * 1024 * 3 # 3 GB 容量限制
 
 # 檢查是否允許上傳的文件類型
 def allowed_file(filename):
@@ -90,7 +90,7 @@ def upload_file():
             <arg value="-f"/>
             <arg value="${{bin.dir}}"/>
             <arg value="-z"/>
-            <arg value="${{libs.dir}}/your_zip_file.zip"/> <!-- 可以放入您需要的ZIP -->
+            <arg value="${{libs.dir}}/{filename}"/> <!-- 使用上传的 ZIP 文件名 -->
         </exec>
     </target>
 </project>
@@ -102,7 +102,10 @@ def upload_file():
 
     # 执行 Ant 打包
     try:
-        result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True)
+        result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True, text=True)
+        print(result.stdout)  # 打印标准输出
+        print(result.stderr)   # 打印标准错误
+
         apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{secure_filename(apk_name)}.apk')
 
         if not os.path.exists(apk_path):
@@ -115,7 +118,7 @@ def upload_file():
 
         return send_file(custom_apk_path, as_attachment=True, download_name=custom_apk_name)
     except subprocess.CalledProcessError as e:
-        return jsonify({'error': f'APK 打包失敗: {e.stderr.decode("utf-8")}'}), 500
+        return jsonify({'error': f'APK 打包失敗: {e.stderr}'}), 500
     except Exception as e:
         return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500  # 捕获其他错误
     finally:
