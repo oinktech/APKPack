@@ -72,10 +72,10 @@ def upload_file():
     except zipfile.BadZipFile:
         return jsonify({'error': '無法解壓縮該文件，請確認文件是否正確'}), 400
 
-    # 執行 Gradle 打包
+    # 執行 Ant 打包
     try:
-        result = subprocess.run(['./gradlew', 'assembleDebug'], cwd=BUILD_FOLDER, check=True, capture_output=True)
-        apk_path = os.path.join(BUILD_FOLDER, 'app/build/outputs/apk/debug/app-debug.apk')
+        result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True)
+        apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{apk_name}.apk')
 
         if not os.path.exists(apk_path):
             return jsonify({'error': '打包失敗，無法生成 APK 文件'}), 500
