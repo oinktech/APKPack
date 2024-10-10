@@ -15,10 +15,12 @@ RUN apt-get update && \
 RUN mkdir -p /opt/android-sdk && \
     curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-8092744_latest.zip && \
     unzip sdk-tools.zip -d /opt/android-sdk && \
-    rm sdk-tools.zip
+    rm sdk-tools.zip && \
+    # 確保 cmdline-tools 的目錄結構正確
+    mv /opt/android-sdk/cmdline-tools /opt/android-sdk/cmdline-tools/latest
 
 ENV ANDROID_HOME /opt/android-sdk
-ENV PATH $ANDROID_HOME/cmdline-tools/bin:$PATH
+ENV PATH $ANDROID_HOME/cmdline-tools/latest/bin:$PATH
 
 # 安裝 Gradle
 RUN GRADLE_VERSION=7.6 && \
