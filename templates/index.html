@@ -26,6 +26,7 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
             max-width: 500px;
             width: 100%;
+            margin-bottom: 30px;
         }
         label {
             font-size: 1.2rem;
@@ -84,6 +85,31 @@
             background-color: #00bfff;
             transition: width 0.4s ease;
         }
+        .file-structure {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        .file-structure h2 {
+            color: #00bfff;
+            font-size: 1.8rem;
+        }
+        pre {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 1rem;
+            overflow-x: auto;
+        }
+        footer {
+            margin-top: 50px;
+            font-size: 0.9rem;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -103,6 +129,26 @@
     </div>
 
     <div id="status"></div>
+
+    <div class="file-structure">
+        <h2>支援打包的 ZIP 檔案結構</h2>
+        <pre>
+cordova-app.zip
+│
+├── index.html            # 主 HTML 文件
+├── css                   # CSS 文件夾
+│   └── styles.css        # 樣式文件
+├── js                    # JavaScript 文件夾
+│   └── app.js            # 應用邏輯文件
+└── images                # 圖片文件夾
+    └── logo.png          # 示例圖片
+        </pre>
+        <p>請確保您的 ZIP 檔案中包含上述結構，這樣我們才能正確打包 APK。</p>
+    </div>
+
+    <footer>
+        <p>© 2024 APKPack. 保留所有權利。</p>
+    </footer>
 
     <script>
         const form = document.getElementById('uploadForm');
