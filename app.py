@@ -1,33 +1,28 @@
-from flask import Flask, request, jsonify, send_file, render_template
-import os
-import subprocess
-import shutil
+from flask import Flask, request, jsonify, send_file
 from werkzeug.utils import secure_filename
+import os
+import shutil
+import subprocess
 
 app = Flask(__name__)
 
-# 設置上傳和構建的資料夾
-UPLOAD_FOLDER = '/tmp/uploads'
+# 設定上傳文件的資料夾和建構資料夾
+UPLOAD_FOLDER = 'uploads'
 BUILD_FOLDER = '/tmp/build'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(BUILD_FOLDER, exist_ok=True)
+ALLOWED_EXTENSIONS = {'zip'}
 
-# 設置文件大小限制（100MB）
-MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
-app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+# 確保上傳文件的資料夾存在
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# 檢查文件擴展名
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # 檢查伺服器空間
 def check_server_capacity():
     total, used, free = shutil.disk_usage("/")
-    return free > 1024 * 1024 * 1024 * 3  # 3 GB 容量限制
-
-# 檢查是否允許上傳的文件類型
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'zip'
-
-@app.route('/')
-def index():
-    return render_template('index.html')
+    # 可以根據需要調整空間判斷的邏輯
+    return free > 1024 * 1024 * 100  # 需至少100MB空間
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -112,7 +107,12 @@ def upload_file():
     # 在 BUILD_FOLDER 中初始化 Cordova 项目
     try:
         print("初始化 Cordova 項目...")
-        subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name], check=True)
+        result = subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name],
+                                check=True, stderr=subprocess.PIPE, text=True)
+
+        if result.stderr:
+            print(f"Cordova 創建項目錯誤: {result.stderr}")
+            return jsonify({'error': f'Cordova 創建項目錯誤: {result.stderr}'}), 500
 
         # 將網站文件複製到 Cordova 的 www 資料夾
         shutil.copytree(BUILD_FOLDER, os.path.join(BUILD_FOLDER, 'www'), dirs_exist_ok=True)
@@ -135,8 +135,8 @@ def upload_file():
         return send_file(apk_path, as_attachment=True)
 
     except subprocess.CalledProcessError as e:
-        print(f"APK 打包失敗: {e.stderr.decode('utf-8')}")
-        return jsonify({'error': f'APK 打包失敗: {e.stderr.decode("utf-8")}'}, 500)
+        print(f"APK 打包失敗: {e.stderr if e.stderr else '無法獲取錯誤信息'}")
+        return jsonify({'error': f'APK 打包失敗: {e.stderr if e.stderr else "無法獲取錯誤信息"}'}), 500
     except Exception as e:
         print(f"執行打包失敗: {str(e)}")
         return jsonify({'error': f'執行打包失敗: {str(e)}'}), 500
@@ -148,5 +148,4 @@ def upload_file():
         shutil.rmtree(BUILD_FOLDER, ignore_errors=True)
 
 if __name__ == '__main__':
-    print("伺服器啟動中...")
-    app.run(host='0.0.0.0', port=10000, debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
