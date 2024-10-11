@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     ant \
     curl \
+    python3 \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Node.js（使用 NodeSource）
@@ -53,7 +55,6 @@ COPY . .
 EXPOSE 10000
 
 # 创建 src 目录（如果需要）
-RUN mkdir -p /app/src
 
 # 检查工具版本
 RUN ant -version
