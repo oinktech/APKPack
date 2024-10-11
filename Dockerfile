@@ -29,12 +29,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 # 安装 Cordova
 RUN npm install -g cordova
 
-# 安裝 Gradle
+# 安装 Gradle
 RUN wget https://services.gradle.org/distributions/gradle-7.4.2-bin.zip -P /tmp \
     && unzip -d /opt/gradle /tmp/gradle-7.4.2-bin.zip \
     && rm /tmp/gradle-7.4.2-bin.zip
 
-# 設置 Gradle 環境變量
+# 设置 Gradle 环境变量
 ENV GRADLE_HOME=/opt/gradle/gradle-7.4.2
 ENV PATH=${PATH}:${GRADLE_HOME}/bin
 
@@ -68,33 +68,15 @@ COPY . .
 # 确认文件是否正确复制
 RUN ls -la /app
 
-# 设置 FLASK_APP 环境变量
+# 设置 FLASK_APP 和 FLASK_ENV 环境变量
 ENV FLASK_APP=app.py
+ENV FLASK_ENV=development
 
 # 暴露端口 10000
 EXPOSE 10000
 
-# 创建 src 目录（如果需要）
-
-# 检查工具版本
-RUN ant -version
-RUN java -version
-RUN cordova telemetry on
-RUN cordova -v
-RUN cordova --version
+# 创建 uploads 目录
 RUN mkdir uploads
-RUN ls
-RUN cordova create /tmp/testapp com.example.myapp MyApp
-
-# 設置工作目錄
-WORKDIR /tmp/testapp
-
-# 確認項目結構
-RUN ls -la
-
-# 添加 Android 平台
-RUN cordova platform add android
-RUN cordova build android
 
 # 执行 Flask 应用
-CMD ["flask", "run", "--host=0.0.0.0", "--port=10000"]
+CMD ["python3", "app.py"]
