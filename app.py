@@ -63,6 +63,10 @@ def upload_file():
         return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500
 
     # 解壓文件
+    if os.path.exists(BUILD_FOLDER):
+        shutil.rmtree(BUILD_FOLDER)  # 清理舊的構建文件夾
+    os.makedirs(BUILD_FOLDER)  # 創建新的構建文件夾
+
     try:
         print(f"解壓文件到 {BUILD_FOLDER}")
         shutil.unpack_archive(file_path, BUILD_FOLDER)
@@ -104,7 +108,7 @@ def upload_file():
         print(f"生成配置文件失敗: {str(e)}")
         return jsonify({'error': f'生成配置文件失敗: {str(e)}'}), 500
 
-    # 在 BUILD_FOLDER 中初始化 Cordova 项目
+    # 在 BUILD_FOLDER 中初始化 Cordova 項目
     try:
         print("初始化 Cordova 項目...")
         subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name], check=True)
