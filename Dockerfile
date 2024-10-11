@@ -59,6 +59,7 @@ EXPOSE 10000
 # 检查工具版本
 RUN ant -version
 RUN java -version
+RUN cordova telemetry on
 RUN cordova -v
 RUN cordova --version
 RUN mkdir uploads
