@@ -61,6 +61,8 @@ RUN ant -version
 RUN java -version
 RUN cordova -v
 RUN cordova --version
+RUN mkdir uploads
+RUN ls
 
 # 执行 Flask 应用
 CMD ["flask", "run", "--host=0.0.0.0", "--port=10000"]
