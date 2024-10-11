@@ -46,6 +46,8 @@ COPY . .
 
 # 暴露端口 10000
 EXPOSE 10000
+RUN ls /opt/android-sdk/build-tools/30.0.3/
+
 # 创建 src 目录（如果需要）
 RUN mkdir -p /app/src
 
