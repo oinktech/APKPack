@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template
 from werkzeug.utils import secure_filename
 import os
 import shutil
@@ -21,8 +21,8 @@ def allowed_file(filename):
 # 檢查伺服器空間
 def check_server_capacity():
     total, used, free = shutil.disk_usage("/")
-    # 可以根據需要調整空間判斷的邏輯
     return free > 1024 * 1024 * 100  # 需至少100MB空間
+
 @app.route('/')
 def index():
     return render_template('index.html')
