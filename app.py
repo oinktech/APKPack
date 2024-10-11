@@ -1,8 +1,6 @@
 from flask import Flask, request, jsonify, send_file, render_template
 import os
 import subprocess
-import zipfile
-from werkzeug.utils import secure_filename
 import shutil
 
 app = Flask(__name__)
@@ -43,7 +41,7 @@ def upload_file():
         return jsonify({'error': '沒有選擇文件'}), 400
 
     file = request.files['file']
-    apk_name = request.form.get('apk_name', 'app-debug').strip()  # 默認名稱為 app-debug
+    app_name = request.form.get('app_name', 'MyApp').strip()  # 默認名稱為 MyApp
 
     if file.filename == '':
         print("文件名稱為空")
@@ -61,86 +59,46 @@ def upload_file():
         file.save(file_path)
     except Exception as e:
         print(f"文件上傳失敗: {str(e)}")
-        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500  # 更详细的错误信息
+        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500
 
     # 解壓文件
     try:
         print(f"解壓文件到 {BUILD_FOLDER}")
-        with zipfile.ZipFile(file_path, 'r') as zip_ref:
-            zip_ref.extractall(BUILD_FOLDER)
-    except zipfile.BadZipFile:
-        print("無法解壓縮該文件")
-        return jsonify({'error': '無法解壓縮該文件，請確認文件是否正確'}), 400
+        shutil.unpack_archive(file_path, BUILD_FOLDER)
     except Exception as e:
         print(f"解壓縮失敗: {str(e)}")
-        return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500  # 捕获其他解压缩异常
+        return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500
 
-    # 生成 build.xml
-    build_xml_content = f"""<project name="APKPack" default="debug" basedir=".">
-    <property name="src.dir" value="."/>
-    <property name="bin.dir" value="bin"/>
-    <property name="libs.dir" value="libs"/>
-
-    <target name="clean">
-        <delete dir="${{bin.dir}}"/>
-    </target>
-
-    <target name="compile">
-        <mkdir dir="${{bin.dir}}"/>
-        <copy todir="${{bin.dir}}">
-            <fileset dir="${{src.dir}}"/>
-        </copy>
-    </target>
-
-    <target name="debug" depends="clean, compile">
-        <echo message="Building APK..."/>
-        <exec executable="java" failonerror="true">
-            <arg value="-jar"/>
-            <arg value="/opt/android-sdk/build-tools/30.0.3/apkbuilder.jar"/>
-            <arg value="{secure_filename(apk_name)}.apk"/>
-            <arg value="-f"/>
-            <arg value="${{bin.dir}}"/>
-            <arg value="-z"/>
-            <arg value="${{libs.dir}}/{filename}"/> <!-- 使用上传的 ZIP 文件名 -->
-        </exec>
-    </target>
-</project>
-"""
-    build_xml_path = os.path.join(BUILD_FOLDER, 'build.xml')
+    # 在 BUILD_FOLDER 中初始化 Cordova 项目
     try:
-        print(f"生成 build.xml 到 {build_xml_path}")
-        with open(build_xml_path, 'w') as build_file:
-            build_file.write(build_xml_content)
-    except Exception as e:
-        print(f"生成 build.xml 失敗: {str(e)}")
-        return jsonify({'error': f'生成 build.xml 失敗: {str(e)}'}), 500
+        print("初始化 Cordova 項目...")
+        subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name], check=True)
+        
+        # 將網站文件複製到 Cordova 的 www 資料夾
+        shutil.copytree(BUILD_FOLDER, os.path.join(BUILD_FOLDER, 'www'), dirs_exist_ok=True)
 
-    # 執行 Ant 打包
-    try:
-        print("開始執行 Ant 打包...")
-        result = subprocess.run(['ant', 'debug'], cwd=BUILD_FOLDER, check=True, capture_output=True, text=True)
-        print("標準輸出:", result.stdout)
-        print("標準錯誤:", result.stderr)
+        # 添加 Android 平台
+        print("添加 Android 平台...")
+        subprocess.run(['cordova', 'platform', 'add', 'android'], cwd=BUILD_FOLDER, check=True)
 
-        apk_path = os.path.join(BUILD_FOLDER, 'bin', f'{secure_filename(apk_name)}.apk')
+        # 構建 APK 文件
+        print("構建 APK...")
+        subprocess.run(['cordova', 'build', 'android'], cwd=BUILD_FOLDER, check=True)
+
+        apk_path = os.path.join(BUILD_FOLDER, 'platforms', 'android', 'app', 'build', 'outputs', 'apk', 'debug', f'{app_name}-debug.apk')
 
         if not os.path.exists(apk_path):
             print("打包失敗，無法生成 APK 文件")
             return jsonify({'error': '打包失敗，無法生成 APK 文件'}), 500
 
-        # 使用用户指定的 APK 名稱
-        custom_apk_name = f"{secure_filename(apk_name)}.apk"
-        custom_apk_path = os.path.join(BUILD_FOLDER, custom_apk_name)
-        os.rename(apk_path, custom_apk_path)
-
-        print(f"打包成功，APK 路徑為: {custom_apk_path}")
-        return send_file(custom_apk_path, as_attachment=True, download_name=custom_apk_name)
+        print(f"打包成功，APK 路徑為: {apk_path}")
+        return send_file(apk_path, as_attachment=True)
     except subprocess.CalledProcessError as e:
         print(f"APK 打包失敗: {e.stderr}")
         return jsonify({'error': f'APK 打包失敗: {e.stderr}'}), 500
     except Exception as e:
-        print(f"執行 Ant 打包失敗: {str(e)}")
-        return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500  # 捕获其他错误
+        print(f"執行打包失敗: {str(e)}")
+        return jsonify({'error': f'執行打包失敗: {str(e)}'}), 500
     finally:
         # 清理上傳的文件和構建文件
         print("清理上傳和構建文件...")
