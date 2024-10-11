@@ -65,6 +65,12 @@ WORKDIR /app
 # 复制项目文件到容器中
 COPY . .
 
+# 确认文件是否正确复制
+RUN ls -la /app
+
+# 设置 FLASK_APP 环境变量
+ENV FLASK_APP=app.py
+
 # 暴露端口 10000
 EXPOSE 10000
 
