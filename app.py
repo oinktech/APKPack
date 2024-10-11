@@ -17,6 +17,11 @@ os.makedirs(BUILD_FOLDER, exist_ok=True)
 MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
+# Android SDK 相关路径
+ANDROID_HOME = '/opt/android-sdk'
+os.environ['ANDROID_HOME'] = ANDROID_HOME
+os.environ['PATH'] = f"{os.environ['PATH']}:{ANDROID_HOME}/cmdline-tools/bin:{ANDROID_HOME}/cmdline-tools/latest/bin:{ANDROID_HOME}/platform-tools:{ANDROID_HOME}/build-tools"
+
 # 檢查伺服器空間
 def check_server_capacity():
     total, used, free = shutil.disk_usage("/")
@@ -53,7 +58,7 @@ def upload_file():
     try:
         file.save(file_path)
     except Exception as e:
-        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500  # 更详细的错误信息
+        return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500
 
     # 解壓文件
     try:
@@ -62,7 +67,7 @@ def upload_file():
     except zipfile.BadZipFile:
         return jsonify({'error': '無法解壓縮該文件，請確認文件是否正確'}), 400
     except Exception as e:
-        return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500  # 捕获其他解压缩异常
+        return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500
 
     # 生成 build.xml
     build_xml_content = f"""<project name="APKPack" default="debug" basedir=".">
@@ -85,12 +90,12 @@ def upload_file():
         <echo message="Building APK..."/>
         <exec executable="java" failonerror="true">
             <arg value="-jar"/>
-            <arg value="${ANDROID_HOME}/build-tools/30.0.3/apkbuilder.jar"/>
+            <arg value="{ANDROID_HOME}/build-tools/30.0.3/apkbuilder.jar"/>
             <arg value="{secure_filename(apk_name)}.apk"/>
             <arg value="-f"/>
             <arg value="${{bin.dir}}"/>
             <arg value="-z"/>
-            <arg value="${{libs.dir}}/{filename}"/> <!-- 使用上传的 ZIP 文件名 -->
+            <arg value="${{libs.dir}}/{filename}"/>
         </exec>
     </target>
 </project>
@@ -120,7 +125,7 @@ def upload_file():
     except subprocess.CalledProcessError as e:
         return jsonify({'error': f'APK 打包失敗: {e.stderr}'}), 500
     except Exception as e:
-        return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500  # 捕获其他错误
+        return jsonify({'error': f'執行 Ant 打包失敗: {str(e)}'}), 500
     finally:
         # 清理上傳的文件和構建文件
         if os.path.exists(file_path):
