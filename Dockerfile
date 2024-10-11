@@ -15,8 +15,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
-# 创建 src 目录（如果需要）
-RUN mkdir -p /app/src
+
 
 # 设置 Android SDK 相关环境变量
 ENV ANDROID_HOME=/opt/android-sdk
@@ -47,6 +46,8 @@ COPY . .
 
 # 暴露端口 10000
 EXPOSE 10000
+# 创建 src 目录（如果需要）
+RUN mkdir -p /app/src
 
 RUN ant -version
 RUN java -version
