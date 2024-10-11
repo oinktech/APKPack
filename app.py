@@ -32,7 +32,7 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     print("開始處理文件上傳...")
-    
+
     if not check_server_capacity():
         print("伺服器空間不足")
         return jsonify({'error': '伺服器空間不足，請稍後再試'}), 507
@@ -62,11 +62,12 @@ def upload_file():
         print(f"文件上傳失敗: {str(e)}")
         return jsonify({'error': f'文件上傳失敗: {str(e)}'}), 500
 
-    # 解壓文件
+    # 解壓文件之前清理 BUILD_FOLDER
     if os.path.exists(BUILD_FOLDER):
         shutil.rmtree(BUILD_FOLDER)  # 清理舊的構建文件夾
     os.makedirs(BUILD_FOLDER)  # 創建新的構建文件夾
 
+    # 解壓文件
     try:
         print(f"解壓文件到 {BUILD_FOLDER}")
         shutil.unpack_archive(file_path, BUILD_FOLDER)
@@ -77,7 +78,7 @@ def upload_file():
     # 自動生成 config.xml 和 package.json
     try:
         print("自動生成 config.xml 和 package.json...")
-        
+
         # 生成 config.xml
         config_content = f'''<?xml version="1.0" encoding="UTF-8"?>
 <widget id="{app_name.lower()}.cordova" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
@@ -108,7 +109,7 @@ def upload_file():
         print(f"生成配置文件失敗: {str(e)}")
         return jsonify({'error': f'生成配置文件失敗: {str(e)}'}), 500
 
-    # 在 BUILD_FOLDER 中初始化 Cordova 項目
+    # 在 BUILD_FOLDER 中初始化 Cordova 项目
     try:
         print("初始化 Cordova 項目...")
         subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name], check=True)
@@ -132,9 +133,10 @@ def upload_file():
 
         print(f"打包成功，APK 路徑為: {apk_path}")
         return send_file(apk_path, as_attachment=True)
+
     except subprocess.CalledProcessError as e:
-        print(f"APK 打包失敗: {e.stderr}")
-        return jsonify({'error': f'APK 打包失敗: {e.stderr}'}), 500
+        print(f"APK 打包失敗: {e.stderr.decode('utf-8')}")
+        return jsonify({'error': f'APK 打包失敗: {e.stderr.decode("utf-8")}'}, 500)
     except Exception as e:
         print(f"執行打包失敗: {str(e)}")
         return jsonify({'error': f'執行打包失敗: {str(e)}'}), 500
