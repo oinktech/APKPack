@@ -24,6 +24,15 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 # 安装 Cordova
 RUN npm install -g cordova
 
+# 安裝 Gradle
+RUN wget https://services.gradle.org/distributions/gradle-7.4.2-bin.zip -P /tmp \
+    && unzip -d /opt/gradle /tmp/gradle-7.4.2-bin.zip \
+    && rm /tmp/gradle-7.4.2-bin.zip
+
+# 設置 Gradle 環境變量
+ENV GRADLE_HOME=/opt/gradle/gradle-7.4.2
+ENV PATH=${PATH}:${GRADLE_HOME}/bin
+
 # 设置 Android SDK 相关环境变量
 ENV ANDROID_HOME=/opt/android-sdk
 ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
