@@ -110,6 +110,9 @@ def upload_file():
     # 在 BUILD_FOLDER 中初始化 Cordova 项目
     try:
         print("初始化 Cordova 項目...")
+        # 確保 Cordova 已安裝
+        subprocess.run(['cordova', '-v'], check=True)
+
         result = subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name],
                                 check=True, stderr=subprocess.PIPE, text=True)
 
