@@ -64,7 +64,8 @@ RUN cordova -v
 RUN cordova --version
 RUN mkdir uploads
 RUN ls
-RUN cordova create /tmp/build MyApp MyApp
+RUN cordova create /tmp/testapp MyApp MyApp
+RUN cd /tmp/testapp
 RUN cordova platform add android
 RUN cordova build android
 
