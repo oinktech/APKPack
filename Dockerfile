@@ -8,14 +8,19 @@ ENV TZ=Asia/Taipei
 # 更新包列表并安装必要的工具和依赖
 RUN apt-get update && apt-get install -y \
     tzdata \
-    openjdk-11-jdk \
     wget \
     unzip \
     ant \
     curl \
     python3 \
     python3-pip \
+    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
+
+# 安装 OpenJDK 17
+RUN apt-add-repository ppa:openjdk-r/ppa -y && \
+    apt-get update && \
+    apt-get install -y openjdk-17-jdk
 
 # 安装 Node.js（使用 NodeSource）
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
