@@ -65,7 +65,14 @@ RUN cordova --version
 RUN mkdir uploads
 RUN ls
 RUN cordova create /tmp/testapp MyApp MyApp
-RUN cd /tmp/testapp
+
+# 設置工作目錄
+WORKDIR /tmp/testapp
+
+# 確認項目結構
+RUN ls -la
+
+# 添加 Android 平台
 RUN cordova platform add android
 RUN cordova build android
 
