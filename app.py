@@ -110,26 +110,25 @@ def upload_file():
     # 在 BUILD_FOLDER 中初始化 Cordova 项目
     try:
         print("初始化 Cordova 項目...")
-        # 確保 Cordova 已安裝
-        subprocess.run(['cordova', '-v'], check=True)
+        
+        # 创建 Cordova 项目
+        subprocess.run(['cordova', 'create', BUILD_FOLDER, f'com.example.{app_name.lower()}', app_name],
+                       check=True, stderr=subprocess.PIPE, text=True)
 
-        result = subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name],
-                                check=True, stderr=subprocess.PIPE, text=True)
+        # 設置工作目錄
+        os.chdir(BUILD_FOLDER)
 
-        if result.stderr:
-            print(f"Cordova 創建項目錯誤: {result.stderr}")
-            return jsonify({'error': f'Cordova 創建項目錯誤: {result.stderr}'}), 500
-
-        # 將網站文件複製到 Cordova 的 www 資料夾
-        shutil.copytree(BUILD_FOLDER, os.path.join(BUILD_FOLDER, 'www'), dirs_exist_ok=True)
+        # 確認項目結構
+        print("確認項目結構...")
+        subprocess.run(['ls', '-la'], check=True)
 
         # 添加 Android 平台
         print("添加 Android 平台...")
-        subprocess.run(['cordova', 'platform', 'add', 'android'], cwd=BUILD_FOLDER, check=True)
+        subprocess.run(['cordova', 'platform', 'add', 'android'], check=True)
 
         # 構建 APK 文件
         print("構建 APK...")
-        subprocess.run(['cordova', 'build', 'android'], cwd=BUILD_FOLDER, check=True)
+        subprocess.run(['cordova', 'build', 'android'], check=True)
 
         apk_path = os.path.join(BUILD_FOLDER, 'platforms', 'android', 'app', 'build', 'outputs', 'apk', 'debug', f'{app_name}-debug.apk')
 
