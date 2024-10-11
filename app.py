@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_file, render_template
 import os
 import subprocess
 import shutil
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -69,11 +70,45 @@ def upload_file():
         print(f"解壓縮失敗: {str(e)}")
         return jsonify({'error': f'解壓縮失敗: {str(e)}'}), 500
 
+    # 自動生成 config.xml 和 package.json
+    try:
+        print("自動生成 config.xml 和 package.json...")
+        
+        # 生成 config.xml
+        config_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<widget id="{app_name.lower()}.cordova" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
+    <name>{app_name}</name>
+    <description>{app_name} 的描述</description>
+    <author email="you@example.com" href="http://example.com">Your Name</author>
+    <content src="index.html" />
+    <access origin="*" />
+</widget>
+'''
+        with open(os.path.join(BUILD_FOLDER, 'config.xml'), 'w') as config_file:
+            config_file.write(config_content)
+
+        # 生成 package.json
+        package_content = f'''{{
+    "name": "{app_name.lower()}",
+    "version": "1.0.0",
+    "description": "{app_name} 的描述",
+    "cordova": {{
+        "platforms": ["android"]
+    }}
+}}
+'''
+        with open(os.path.join(BUILD_FOLDER, 'package.json'), 'w') as package_file:
+            package_file.write(package_content)
+
+    except Exception as e:
+        print(f"生成配置文件失敗: {str(e)}")
+        return jsonify({'error': f'生成配置文件失敗: {str(e)}'}), 500
+
     # 在 BUILD_FOLDER 中初始化 Cordova 项目
     try:
         print("初始化 Cordova 項目...")
         subprocess.run(['cordova', 'create', BUILD_FOLDER, app_name, app_name], check=True)
-        
+
         # 將網站文件複製到 Cordova 的 www 資料夾
         shutil.copytree(BUILD_FOLDER, os.path.join(BUILD_FOLDER, 'www'), dirs_exist_ok=True)
 
