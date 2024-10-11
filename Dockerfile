@@ -47,8 +47,8 @@ RUN wget https://dl.google.com/android/repository/commandlinetools-linux-9477386
 # 同意 SDK 管理器的许可证
 RUN yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
 
-# 安装需要的 SDK 组件
-RUN $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+# 安装需要的 SDK 组件，包括推荐版本的构建工具
+RUN $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
 # 安装 Flask 和其他 Python 依赖
 COPY requirements.txt ./
@@ -74,7 +74,6 @@ RUN cordova --version
 RUN mkdir uploads
 RUN ls
 RUN cordova create /tmp/testapp com.example.myapp MyApp
-
 
 # 設置工作目錄
 WORKDIR /tmp/testapp
