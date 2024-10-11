@@ -64,7 +64,8 @@ RUN cordova -v
 RUN cordova --version
 RUN mkdir uploads
 RUN ls
-RUN cordova create /tmp/testapp MyApp MyApp
+RUN cordova create /tmp/testapp com.example.myapp MyApp
+
 
 # 設置工作目錄
 WORKDIR /tmp/testapp
