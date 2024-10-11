@@ -77,6 +77,6 @@ EXPOSE 10000
 
 # 创建 uploads 目录
 RUN mkdir uploads
-
+RUN cordova telemetry on
 # 执行 Flask 应用
 CMD ["python3", "app.py"]
