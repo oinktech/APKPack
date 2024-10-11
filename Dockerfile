@@ -65,5 +65,8 @@ RUN cordova --version
 RUN mkdir uploads
 RUN ls
 RUN cordova create /tmp/build MyApp MyApp
+RUN cordova platform add android
+RUN cordova build android
+
 # 执行 Flask 应用
 CMD ["flask", "run", "--host=0.0.0.0", "--port=10000"]
